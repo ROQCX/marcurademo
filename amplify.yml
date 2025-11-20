@@ -6,6 +6,9 @@ frontend:
         - corepack enable
         - corepack prepare pnpm@latest --activate
         - pnpm install --frozen-lockfile
+         # Create runtime environment file with OPENAI_API_KEY
+        - |
+          echo "OPENAI_API_KEY=${OPENAI_API_KEY}" > .env
     build:
       commands:
         - pnpm run build
@@ -18,7 +21,4 @@ frontend:
       - node_modules/**/*
       - .next/cache/**/*
       - pnpm-store/**/*
-  environment:
-    variables:
-      OPENAI_API_KEY: $OPENAI_API_KEY
 
