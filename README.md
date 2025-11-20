@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Marcura Ecosystem Assistant
+
+An AI-powered chat assistant for Marcura's product ecosystem, built with Next.js 16, LangChain, and LangGraph. The assistant uses RAG (Retrieval-Augmented Generation) to provide intelligent answers about DA-Desk, MarTrust, and ShipServ products, with a multi-agent architecture that routes questions to relevant products and synthesizes cross-product answers.
+
+## Features
+
+- **Multi-Agent Architecture**: Supervisor agent routes questions to product-specific agents
+- **RAG-Powered**: Vector-based retrieval from product documentation
+- **Streaming Responses**: Real-time streaming of AI responses (where supported)
+- **Product-Specific Agents**: Dedicated agents for DA-Desk, MarTrust, and ShipServ
+- **Cross-Product Synthesis**: Combines answers from multiple products when relevant
+- **Performance Optimized**: Parallel processing, optimized prompts, and single-product pass-through
+- **Modern UI**: Clean, responsive chat interface with Marcura branding
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **AI/ML**: 
+  - LangChain for RAG and LLM integration
+  - LangGraph for multi-agent orchestration
+  - OpenAI GPT-4o-mini for LLM
+  - OpenAI text-embedding-3-small for embeddings
+- **UI**: React, Tailwind CSS, Shadcn UI, Framer Motion
+- **Deployment**: AWS Amplify
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- pnpm
+- OpenAI API key
+
+### Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+# Create a .env.local file with:
+OPENAI_API_KEY=your_api_key_here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Run development server
+pnpm dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Build for production
+pnpm build
 
-## Learn More
+# Start production server
+pnpm start
 
-To learn more about Next.js, take a look at the following resources:
+# Run type checking
+pnpm exec tsc --noEmit
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture
 
-## Deploy on Vercel
+### RAG Layer
+- Loads product documentation from `data/products/`
+- Chunks documents using RecursiveCharacterTextSplitter
+- Creates embeddings and stores in MemoryVectorStore
+- Parallel initialization for faster startup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### LangGraph Workflow
+1. **Supervisor Node**: Routes questions to relevant product(s)
+2. **Product Agent Nodes**: Generate product-specific answers using RAG
+3. **Synthesize Node**: Combines multiple product answers (skipped for single-product queries)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Performance Optimizations
+- Parallel RAG initialization
+- Single-product pass-through (skips synthesis)
+- Reduced token limits and optimized prompts
+- Smaller chunk sizes and reduced retrieval count
+
+## Deployment
+
+### AWS Amplify
+
+The project is configured for AWS Amplify deployment:
+
+1. Set `OPENAI_API_KEY` in Amplify Console under Environment Variables
+2. Push to your repository - Amplify will automatically build and deploy
+3. The `amplify.yml` file handles the build configuration
+
+**Note**: AWS Amplify Hosting doesn't support streaming from Server Actions, so responses are returned as complete messages.
+
+## Project Structure
+
+```
+├── app/
+│   ├── actions/
+│   │   └── chat.ts          # Server Action for chat
+│   ├── layout.tsx           # Root layout
+│   ├── page.tsx             # Main page
+│   └── icon.svg/ico          # Favicon
+├── components/
+│   ├── chat/                # Chat UI components
+│   └── ui/                  # Shadcn UI components
+├── data/
+│   └── products/            # Product documentation (markdown)
+├── lib/
+│   ├── graph/               # LangGraph workflow
+│   ├── llm/                 # LLM configuration and rate limiting
+│   └── rag/                 # RAG initialization and retrieval
+└── public/                  # Static assets
+```
+
+## Environment Variables
+
+- `OPENAI_API_KEY` (required): Your OpenAI API key
+- `OPENAI_MODEL` (optional): Override default model (default: gpt-4o-mini)
+- `OPENAI_TEMPERATURE` (optional): Override default temperature
+- `OPENAI_MAX_TOKENS` (optional): Override default max tokens
+
+## License
+
+Private - Marcura Demo
