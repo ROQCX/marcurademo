@@ -23,7 +23,7 @@ export const DEFAULT_LLM_CONFIG: LLMConfig = {
   topP: 1,
   frequencyPenalty: 0,
   presencePenalty: 0,
-  timeout: 30000, // 30 seconds
+  timeout: 20000, // 20 seconds - faster failure for better UX
 };
 
 /**
@@ -32,8 +32,8 @@ export const DEFAULT_LLM_CONFIG: LLMConfig = {
  */
 export const SUPERVISOR_LLM_CONFIG: LLMConfig = {
   ...DEFAULT_LLM_CONFIG,
-  temperature: 0.3, // Lower temperature for more deterministic routing
-  maxTokens: 500, // Shorter responses for routing
+  temperature: 0.2, // Lower temperature for more deterministic routing
+  maxTokens: 100, // Much shorter - just need JSON array
 };
 
 /**
@@ -43,7 +43,7 @@ export const SUPERVISOR_LLM_CONFIG: LLMConfig = {
 export const PRODUCT_AGENT_LLM_CONFIG: LLMConfig = {
   ...DEFAULT_LLM_CONFIG,
   temperature: 0.6,
-  maxTokens: 1500,
+  maxTokens: 1200, // Reduced from 1500 for faster generation
 };
 
 /**
@@ -52,8 +52,8 @@ export const PRODUCT_AGENT_LLM_CONFIG: LLMConfig = {
  */
 export const SYNTHESIZE_LLM_CONFIG: LLMConfig = {
   ...DEFAULT_LLM_CONFIG,
-  temperature: 0.8, // Higher temperature for more natural synthesis
-  maxTokens: 2000,
+  temperature: 0.7, // Slightly reduced for faster generation
+  maxTokens: 1500, // Reduced from 2000 for faster generation
 };
 
 /**

@@ -45,6 +45,7 @@ export function createGraph(retrievers: Record<string, MemoryVectorStore>) {
     }
     
     // All products completed, go to synthesis
+    // (synthesize node will optimize by passing through single-product answers)
     return "synthesize";
   }
 
@@ -59,6 +60,7 @@ export function createGraph(retrievers: Record<string, MemoryVectorStore>) {
       if (products.length === 0) {
         return "synthesize";
       }
+      // If only one product, we'll skip synthesis later
       return products[0];
     },
     {

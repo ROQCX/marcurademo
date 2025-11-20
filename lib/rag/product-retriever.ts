@@ -1,7 +1,7 @@
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
 import type { ProductId } from "./init-rag";
 
-const TOP_K = 5;
+const TOP_K = 3; // Reduced from 5 for faster retrieval and smaller context
 
 /**
  * Retrieve relevant chunks for a specific product based on the query.

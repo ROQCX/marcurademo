@@ -23,32 +23,37 @@ export async function initRag(): Promise<ProductRetrievers> {
     return retrievers;
   }
 
-  retrievers = {};
+  const newRetrievers: ProductRetrievers = {};
 
   const embeddings = new OpenAIEmbeddings({
     modelName: "text-embedding-3-small",
   });
 
+  // Optimized chunking: smaller chunks and less overlap for faster processing
   const textSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200,
+    chunkSize: 800, // Reduced from 1000 for faster processing
+    chunkOverlap: 100, // Reduced from 200 for less redundancy
   });
 
-  for (const productId of PRODUCTS) {
-    const filePath = join(process.cwd(), "data", "products", `${productId}.md`);
-    const content = readFileSync(filePath, "utf-8");
+  // Parallelize RAG initialization for all products
+  await Promise.all(
+    PRODUCTS.map(async (productId) => {
+      const filePath = join(process.cwd(), "data", "products", `${productId}.md`);
+      const content = readFileSync(filePath, "utf-8");
 
-    // Split the document into chunks
-    const docs = await textSplitter.createDocuments([content], [
-      { productId },
-    ]);
+      // Split the document into chunks
+      const docs = await textSplitter.createDocuments([content], [
+        { productId },
+      ]);
 
-    // Create vector store for this product
-    const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
+      // Create vector store for this product
+      const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
-    retrievers[productId] = vectorStore;
-  }
+      newRetrievers[productId] = vectorStore;
+    })
+  );
 
+  retrievers = newRetrievers;
   return retrievers;
 }
 

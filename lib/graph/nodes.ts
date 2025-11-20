@@ -58,28 +58,25 @@ export async function supervisorNode(
   const lastMessage = state.messages[state.messages.length - 1];
   const userQuestion = lastMessage.content as string;
 
-  const systemPrompt = `You are a routing supervisor for Marcura's product ecosystem. Your job is to analyze user questions and determine which Marcura product(s) are relevant.
+  // Optimized prompt: shorter and more direct for faster processing
+  const systemPrompt = `Route user questions to Marcura products. Return ONLY a JSON array of product IDs.
 
-Available products:
-- da-desk: Port disbursement account management and port call cost control
-- martrust: Payment solutions for crew wages, vendor payments, and financial services
-- shipserv: Maritime e-procurement and supplier network platform
-
-Analyze the user's question and return ONLY a JSON array of relevant product IDs. Return an empty array [] if no products are relevant. Return multiple products if the question touches multiple areas.
+Products: da-desk (port costs), martrust (payments), shipserv (procurement).
 
 Examples:
-- "How can I reduce port call costs?" -> ["da-desk"]
-- "I need to pay my crew members" -> ["martrust"]
-- "Where can I find suppliers for spare parts?" -> ["shipserv"]
-- "How can I combine port cost control with payment processing?" -> ["da-desk", "martrust"]
+- "port costs" -> ["da-desk"]
+- "pay crew" -> ["martrust"]  
+- "suppliers" -> ["shipserv"]
+- "port costs and payments" -> ["da-desk", "martrust"]
 
-Return ONLY the JSON array, nothing else.`;
+Return JSON array only.`;
 
+  // Optimized: shorter user message for faster processing
   const response = await withRateLimit(
     () =>
       supervisorLLM.invoke([
         new SystemMessage(systemPrompt),
-        new HumanMessage(`User question: ${userQuestion}\n\nReturn JSON array of relevant product IDs:`),
+        new HumanMessage(`Q: ${userQuestion}\nJSON:`),
       ]),
     "supervisor"
   );
@@ -130,18 +127,15 @@ export function createProductAgentNode(productId: ProductId) {
       shipserv: "ShipServ",
     };
 
-    const systemPrompt = `You are an expert assistant for ${productNames[productId]}, a Marcura product. You ONLY answer questions about ${productNames[productId]}. 
-
-If the question is not related to ${productNames[productId]}, politely redirect the user or explain that you can only help with ${productNames[productId]}-related questions.
-
-Use the provided context to answer accurately. Be specific and helpful.`;
+    // Optimized: shorter prompt for faster processing
+    const systemPrompt = `Expert assistant for ${productNames[productId]}. Answer using context. Be specific and helpful.`;
 
     const response = await withRateLimit(
       () =>
         productAgentLLM.invoke([
           new SystemMessage(systemPrompt),
           new HumanMessage(
-            `Context about ${productNames[productId]}:\n\n${contextText}\n\n\nUser question: ${userQuestion}`
+            `Context:\n${contextText}\n\nQ: ${userQuestion}`
           ),
         ]),
       `product-${productId}`
@@ -186,6 +180,18 @@ export async function synthesizeNode(
     };
   }
 
+  // Performance optimization: If only one product, pass through its answer directly
+  // This skips the synthesis LLM call and improves response time
+  if (selectedProducts.length === 1) {
+    const productId = selectedProducts[0];
+    const answer = productAnswers[productId];
+    if (answer) {
+      return {
+        messages: [answer],
+      };
+    }
+  }
+
   // Build context from all product answers
   const productAnswersText = selectedProducts
     .map((productId) => {
@@ -199,16 +205,8 @@ export async function synthesizeNode(
     })
     .join("\n\n---\n\n");
 
-  const systemPrompt = `You are a Marcura ecosystem assistant. Your role is to synthesize answers from multiple product experts into a cohesive, helpful response.
-
-When multiple products are involved, explain:
-1. How each product addresses different aspects of the user's question
-2. How the products can work together in workflows
-3. The combined value proposition
-
-Be clear, concise, and focus on the "connected products" story - showing how Marcura's products integrate to solve maritime business challenges.
-
-If context is insufficient, mention that and suggest the user provide more details.`;
+  // Optimized: shorter prompt for faster processing
+  const systemPrompt = `Synthesize answers from multiple Marcura products into one cohesive response. Explain how products work together. Be clear and concise.`;
 
   // Use stream() for token-level streaming of the final response
   // This allows the synthesize node to stream while having full context from all product agents
@@ -217,7 +215,7 @@ If context is insufficient, mention that and suggest the user provide more detai
       synthesizeLLM.stream([
         new SystemMessage(systemPrompt),
         new HumanMessage(
-          `User question: ${userQuestion}\n\n\nProduct-specific answers:\n\n${productAnswersText}\n\n\nSynthesize these into a unified, helpful response:`
+          `Q: ${userQuestion}\n\nAnswers:\n${productAnswersText}\n\nSynthesize:`
         ),
       ]),
     "synthesize"
